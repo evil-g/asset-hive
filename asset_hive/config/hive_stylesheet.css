@@ -1,0 +1,309 @@
+QWidget {
+      font-size: 8pt;
+}
+QGroupBox {
+      border: 1px solid rgba(60, 99, 130);
+}
+QToolTip {
+      background-color: rgb(247, 241, 227);
+      color: black;
+      border: black solid 1px;
+}
+QMenu {
+      menu-scrollable: 1;
+}
+QTreeView {
+      border: 1px transparent;
+      show-decoration-selected: 0;
+      background-color: rgb(50, 50, 50);
+      alternate-background-color: rgb(55, 55, 55);
+}
+QTreeView::branch {
+      border-image: url(none.png);
+}
+QTreeView::branch:selected {
+      background-color: rgba(60, 99, 130);
+      /*background-color: rgb(48, 57, 82);*/
+}
+QListView {
+      border: 1px solid rgb(255, 255, 255, 0.4);
+      /*border: 2px transparent;*/
+}
+QListView::item {
+      height: 18px;
+}
+QListView::item:!selected:hover {
+      border: 0px;
+      background-color: rgb(60, 99, 130);
+      color: rgba(255, 255, 255, 0.7);
+}
+QListView::item:selected {
+      border: 0px;
+      background-color: rgb(60, 99, 130);
+      color: rgba(255, 255, 255, 0.7);
+}
+QHeaderView {
+      border: 0px;
+}
+QLineEdit#no_style {
+      border: 1px solid transparent;
+}
+QLineEdit {
+      border: 1px solid transparent;
+      border-radius: 2px;
+}
+QLineEdit:!selected:hover {
+      border: 1px solid rgb(96, 163, 188);
+}
+QLineEdit:focus {
+      border: 1px solid rgb(96, 163, 188);
+}
+QLineEdit:selected {
+      border: 1px solid rgb(96, 163, 188);
+}
+QLineEdit:disabled {
+      border: 1px transparent;
+}
+QLineEdit:disabled#locked {
+      color: rgb(215, 215, 215);
+      background-color: rgb(100, 100, 100);
+}
+QPlainTextEdit:!selected:hover {
+      border: 1px solid rgb(96, 163, 188);
+}
+QPlainTextEdit:focus {
+      border: 1px solid rgb(96, 163, 188);
+}
+QPlainTextEdit:selected {
+      border: 1px solid rgb(96, 163, 188);
+}
+QPlainTextEdit:disabled {
+      border: 1px transparent;
+}
+QDateTimeEdit {
+      border: 1px transparent;
+      border-radius: 2px;
+      padding: 2px;
+}
+QTimeEdit {
+      border: 1px transparent;
+      border-radius: 2px;
+      padding: 2px;
+}
+QPushButton {
+      font-size: 8pt;
+      border-radius: 3px;
+      border-style: 1px solid rgb(96, 163, 188);
+      padding: 4px;
+}
+QPushButton:menu-indicator{
+      width: 0;
+      height: 0;
+}
+/*QPushButton:disabled {
+      color: rgba(255, 255, 255, 0.4);
+}*/
+QLabel#util {
+      font-family: FontAwesome;
+      color: rgb(130, 204, 221);
+      font-size: 10pt;
+      background: transparent;
+}
+QLabel:disabled#util{
+      color: rgba(255, 255, 255, 0.4);
+}
+QPushButton:!pressed:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+}
+QPushButton#placeholder {
+      font-family: FontAwesome;
+      color: rgb(130, 204, 221);
+      font-size: 10pt;
+      background: transparent;
+}
+QPushButton#util {
+      color: rgb(130, 204, 221);
+      font-family: FontAwesome;
+      font-size: 10pt;
+      padding: 5px;
+      background: transparent;
+}
+QPushButton:disabled#util {
+      color: rgba(255, 255, 255, 0.4);
+      font-family: FontAwesome;
+      font-size: 10pt;
+}
+QPushButton:pressed#util {
+      background-color: rgb(60, 99, 130);
+      font-family: FontAwesome;
+      font-size: 10pt;
+}
+QPushButton:!pressed:hover#util {
+      background-color: rgba(255, 255, 255, 0.1);
+      font-family: FontAwesome;
+      font-size: 10pt;
+}
+QPushButton#util5 {
+      color: rgb(130, 204, 221);
+      font-family: "Font Awesome 5 Free Solid";
+      font-size: 10pt;
+      padding: 5px;
+      background: transparent;
+}
+QPushButton:disabled#util5 {
+      color: rgba(255, 255, 255, 0.4);
+      font-family: "Font Awesome 5 Free Solid";
+      font-size: 10pt;
+}
+QPushButton:pressed#util5 {
+      background-color: rgb(60, 99, 130);
+      font-family: "Font Awesome 5 Free Solid";
+      font-size: 10pt;
+}
+QPushButton:!pressed:hover#util5 {
+      background-color: rgba(255, 255, 255, 0.1);
+      font-family: "Font Awesome 5 Free Solid";
+      font-size: 10pt;
+}
+QPushButton#util5_large {
+      color: rgb(130, 204, 221);
+      font-family: "Font Awesome 5 Free Solid";
+      font-size: 11pt;
+      padding: 5px;
+      background: transparent;
+}
+QPushButton:disabled#util5_large {
+      color: rgba(255, 255, 255, 0.4);
+      font-family: "Font Awesome 5 Free Solid";
+      font-size: 11pt;
+}
+QPushButton:pressed#util5_large {
+      background-color: rgb(60, 99, 130);
+      font-family: "Font Awesome 5 Free Solid";
+      font-size: 11pt;
+}
+QPushButton:!pressed:hover#util5_large {
+      background-color: rgba(255, 255, 255, 0.1);
+      font-family: "Font Awesome 5 Free Solid";
+      font-size: 11pt;
+}
+QPushButton#navbar {
+      color: rgba(255, 255, 255, 0.7);
+      border-radius: 0px;
+      font-size: 9pt;
+}
+QPushButton:disabled#navbar {
+      color: rgba(255, 255, 255, 0.7);
+      border-radius: 0px;
+}
+QPushButton:pressed#navbar{
+      background-color: rgb(60, 99, 130);
+}
+QPushButton#nav_bar_util {
+      border-radius: 0px;
+      font-family: FontAwesome;
+      font-size: 11pt;
+      color: rgb(130, 204, 221);
+}
+QPushButton:disabled#nav_bar_util{
+      font-family: FontAwesome;
+      color: rgba(255, 255, 255, 0.4);
+}
+QPushButton:pressed#nav_bar_util {
+      background-color: rgb(60, 99, 130);
+}
+QPushButton:!pressed:hover#nav_bar_util {
+      background-color: rgba(255, 255, 255, 0.1);
+}
+QPushButton:!pressed:hover#display_only {
+      background-color: rgba(255, 255, 255, 0.3);
+}
+QComboBox QAbstractItemView {
+      selection-color: rgba(255, 255, 255, 0.7);
+      selection-background-color: rgb(60, 99, 130);
+}
+QCheckBox {
+      border: 1px transparent;
+      border-radius: 2px;
+}
+QCheckBox::indicator:hover {
+      color: rgb(231, 76, 60);
+}
+QStyleOptionToolButton::!pressed:hover {
+      color: rgb(231, 76, 60);
+}
+QToolButton::!pressed:hover {
+      color: rgb(231, 76, 60);
+}
+
+QTableView {
+      selection-background-color: rgb(80, 80, 80);
+      /*selection-background-color: rgb(87, 101, 116);*/
+
+}
+
+/*Scene Builder*/
+QPushButton#pre_operation {
+      padding: 5px;
+      background-color: rgba(60, 99, 130, 0.4);
+      border: 1px transparent;
+      font-style: bold;
+      font-weight: 400;
+}
+QPushButton#pre_operation:!pressed:hover {
+      background-color: rgba(60, 99, 130, 1);
+      /*border: 1px solid rgb(150, 150, 150);
+      font-weight: 500;*/
+}
+QPushButton#operation {
+      padding: 5px;
+      background-color: rgba(60, 99, 130, 0.7);
+      border: 1px transparent;
+      font-style: bold;
+      font-weight: 400;
+}
+QPushButton#operation:disabled {
+      background-color: rgba(50, 50, 50);
+      color: rgb(160, 160, 160);
+}
+QPushButton#operation:!pressed:hover {
+      background-color: rgba(60, 99, 130, 1);
+      border: 1px solid rgb(150, 150, 150);
+      font-weight: 500;
+}
+QPushButton#operation:pressed {
+      background-color: rgba(60, 99, 130, 0.7);
+      border: 1px solid rgb(150, 150, 150);
+      font-weight: 500;
+}
+QTabWidget::pane {
+      border: 2px transparent;
+}
+QTabBar::tab {
+      background-color: rgb(60, 60, 60);
+      padding: 8;
+      border-style: solid;
+      border-width: 0px 0px 3px 0px;
+      border-color: none none rgba(60, 99, 130, 0.6) none;
+}
+QTabBar::tab:selected {
+      background-color: rgb(70, 70, 70);
+      border-width: 0px 0px 3px 0px;
+      border-color: none none rgb(96, 163, 188) none;
+}
+QTabBar::tab#filters {
+      background-color: rgb(80, 80, 80);
+      margin-right: 5;
+      border-style: transparent;
+      border-radius: 15px;
+      border-color: transparent;
+      border-width: 0px;
+}
+QPushButton#feather {
+      color: rgb(130, 204, 221);
+      /*padding: 2px;*/
+      background: transparent;
+}
+QPushButton:disabled#feather {
+      color: rgba(60, 60, 60, 1);
+}
