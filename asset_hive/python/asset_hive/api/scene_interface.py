@@ -7,7 +7,7 @@ from Qt import QtCore
 from hive_nuke_utils import node_utils, script_utils
 
 # Anima pipeline
-from core_pipeline import constant, path_manager
+from core_pipeline import constant
 
 
 class BasicScene(QtCore.QObject):
@@ -69,6 +69,15 @@ class NukeScene(BasicScene):
         self.asset_added.emit(asset)
         self.asset_data_added.emit(self.get_asset_data(asset))
 
+    def get_asset_name(self, asset):
+        """
+        Get asset name
+
+        Args:
+            asset (nuke.File_Knob): Get nuke file knob name
+        """
+        return "{0}.{1}".format(asset.node().fullName(), asset.name())
+
     def get_asset_by_name(self, name):
         """
         Get nth asset in scene list
@@ -77,6 +86,7 @@ class NukeScene(BasicScene):
             name (str): Asset name in model
         """
         for asset in self.assets:
+            # TODO cleanup
             if name[:name.rfind(".")] == asset.node().fullName():
                 return asset
 
@@ -126,20 +136,6 @@ class NukeScene(BasicScene):
         """
         file = self.get_asset_path(asset)
 
-        # Try image
-        try:
-            manager = path_manager.utils.get_image_manager(file)
-        except Exception:
-            # Try published file
-            try:
-                manager = path_manager.utils.get_pubfile_manager(file)
-            except Exception:
-                # Try work area image
-                manager = path_manager.PathManager("work.render")
-                manager.context_from_path(file)
-
-        return manager
-
     def get_asset_datatype(self, asset):
         """
         Get asset datatype
@@ -176,7 +172,7 @@ class NukeScene(BasicScene):
         Returns:
             List of model data
         """
-        data = ["{0}.{1}".format(asset.node().fullName(), asset.name()),
+        data = [self.get_asset_name(asset),
                 self.get_asset_area(asset),
                 self.get_asset_datatype(asset),
                 self.get_current_version(asset),

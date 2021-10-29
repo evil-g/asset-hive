@@ -9,7 +9,7 @@ import traceback
 from Qt import QtCore, QtGui, QtWidgets
 
 # Package
-from . import api, config, controller, widgets, utils
+from . import api, asset_info_widget, config, controller, widgets, utils
 from hive_nuke_utils import nuke_ui
 
 
@@ -21,7 +21,9 @@ def show():
               "Update Version", "File"]
 
     scene_controller = api.scene_interface.NukeScene()
+    info_widget = asset_info_widget.NukeInfo(scene_controller)
     ui = AssetHiveWindow(scene_controller,
+                         info_widget=info_widget,
                          header=header,
                          parent=nuke_ui.get_main_nuke_win())
     ui.show()
@@ -30,8 +32,9 @@ def show():
 
 class AssetHiveWindow(QtWidgets.QMainWindow):
 
-    def __init__(self, scene_controller, default_preset="All Assets",
-                 open_dir_limit=5, header=None, parent=None):
+    def __init__(self, scene_controller, info_widget=None,
+                 default_preset="All Assets", open_dir_limit=5, header=None,
+                 parent=None):
         """
         Initialize main ui
         """
@@ -131,8 +134,8 @@ class AssetHiveWindow(QtWidgets.QMainWindow):
         self.tabs.setTabBar(self.tab_bar)
         asset_layout.addWidget(self.tabs)
         # Info pane
-        self.info_pane = widgets.InfoPaneWidget()
-        # asset_layout.addWidget(self.info_pane)
+        self.info_widget = info_widget
+        asset_layout.addWidget(self.info_widget)
         self.main_layout.addLayout(asset_layout)
 
         # Tab buttons
@@ -285,6 +288,8 @@ class AssetHiveWindow(QtWidgets.QMainWindow):
         asset_table.setSortingEnabled(True)
         asset_table.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
         asset_table.doubleClicked.connect(self.on_focus)
+        if self.info_widget:
+            asset_table.doubleClicked.connect(self.on_load_asset)
         self.tabs.addTab(asset_table, name)
 
         # Register with controller
@@ -582,8 +587,20 @@ class AssetHiveWindow(QtWidgets.QMainWindow):
         """
         Execute controller scene focus
         """
+        # Focus scene
         if self.focus_mode_btn.isChecked():
             self.controller.focus_to_asset(index)
+
+    def on_load_asset(self, index):
+        """
+        Load selected asset into info widget
+
+        Args:
+            index (QtCore.QModelIndex): Table model index
+        """
+        if self.info_widget:
+            self.info_widget.load_asset(
+                self.controller.get_asset(index.model().index(index.row(), 0)))
 
     def on_focus_mode_press(self):
         """

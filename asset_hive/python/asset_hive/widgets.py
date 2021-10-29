@@ -117,22 +117,6 @@ class AutoCloseLineEdit(AutoCleanLineEdit):
         super(AutoCloseLineEdit, self).close()
 
 
-class InfoPaneWidget(QtWidgets.QWidget):
-
-    def __init__(self, parent=None):
-        """
-        Initialize asset info pane
-        """
-        super(InfoPaneWidget, self).__init__(parent=parent)
-
-        self.main_layout = QtWidgets.QVBoxLayout()
-        self.main_layout.setAlignment(QtCore.Qt.AlignTop)
-
-        self.main_layout.addWidget(QtWidgets.QLabel("Asset Info Pane"))
-
-        self.setLayout(self.main_layout)
-
-
 class PlusTabBar(QtWidgets.QTabBar):
 
     def __init__(self, parent=None):

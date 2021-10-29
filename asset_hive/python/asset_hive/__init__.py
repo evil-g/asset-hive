@@ -1,5 +1,6 @@
 __all__ = [
     "api",
+    "asset_info_widget",
     "filters",
     "controller",
     "model",
@@ -12,6 +13,7 @@ __all__ = [
 
 from . import (
     api,
+    asset_info_widget,
     filters,
     controller,
     model,
