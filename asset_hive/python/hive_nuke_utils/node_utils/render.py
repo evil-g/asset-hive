@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 # Third party
+from builtins import range
 import nuke
 import nukescripts
 

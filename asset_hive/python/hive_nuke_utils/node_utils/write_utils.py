@@ -47,6 +47,21 @@ def limit_to_range(node_name, start, end):
     node.knob("last").setValue(end)
 
 
+def remove_range_limit(node_name):
+    """
+    Remove frame range limit on Node
+
+    Args:
+        node_name (str): Name of node to clear limit from
+    """
+    node = nuke.toNode(node_name)
+    if not node:
+        raise ValueError("Node '{0}' does not exist!"
+                         "".format(node_name))
+
+    node.knob("use_limit").setValue(False)
+
+
 def get_range_limit(node_name):
     """
     Get frame range limit for Node
@@ -63,18 +78,3 @@ def get_range_limit(node_name):
         return (None, None)
 
     return node_ops.get_node_range(node)
-
-
-def remove_range_limit(node_name):
-    """
-    Remove frame range limit on Node
-
-    Args:
-        node_name (str): Name of node to clear limit from
-    """
-    node = nuke.toNode(node_name)
-    if not node:
-        raise ValueError("Node '{0}' does not exist!"
-                         "".format(node_name))
-
-    node.knob("use_limit").setValue(False)

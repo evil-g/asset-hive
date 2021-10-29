@@ -1,4 +1,8 @@
+from __future__ import division
+from __future__ import print_function
 # Standard
+from builtins import range
+from past.utils import old_div
 import json
 import os
 import re
@@ -24,6 +28,7 @@ NODE_FILE_KNOBS = {
 # Default knobs to skip when swapping nodes
 SKIP_KNOBS = ["label", "name", "xpos", "ypos", "anima_source_file", "file"]
 FRAME_KNOBS = ["first", "last", "origfirst", "origlast"]
+READ_FROM_FILE_KNOBS = ["read_from_file", "read_from_file_link"]
 
 # Knob naming
 ANIMA_SRC_KNOB = "anima_source_file"
@@ -108,15 +113,18 @@ def map_node_for_os(node=None):
     if not node:
         return
 
+    error = []
     # Update each file knob
-    for knob_name, file in get_node_files(node).iteritems():
+    for knob_name, file in get_node_files(node).items():
         # Get mapped file path
         try:
             mapped_file = path_utils.dirmap(file, os_name=os.name)
         except Exception:
+            nuke.tprint("*" * 20)
             nuke.tprint("Error! Failed to update '{0}'"
                         "".format(node.fullName()))
             traceback.print_exc()
+            nuke.tprint("*" * 20)
             mapped_file = file
 
         # TODO 'UnicodeWarning: Unicode equal comparison failed to convert'
@@ -126,9 +134,26 @@ def map_node_for_os(node=None):
             continue
 
         # Update knob
-        nuke.tprint("Updating Node '{0}' filepath for {1}"
-                    "".format(node.fullName(), os.name))
-        update_file(node, knob_name, mapped_file, no_popup=True)
+        try:
+            nuke.tprint("Updating Node '{0}' filepath for {1}"
+                        "".format(node.fullName(), os.name))
+            update_file(node, knob_name, mapped_file, no_popup=True)
+        except Exception:
+            nuke.tprint("*" * 20)
+            nuke.tprint("Error! Failed to update '{0}'"
+                        "".format(node.fullName()))
+            traceback.print_exc()
+            nuke.tprint("*" * 20)
+            # Track error nodes
+            if node.fullName() not in error:
+                error.append(node.fullName())
+
+    if error:
+        error_msg = "Failed to map {0} to OS: ".format(len(error)) + \
+            ", ".join(sorted(error))
+        nuke.tprint("*" * 20)
+        nuke.tprint(error_msg)
+        raise RuntimeError(error_msg)
 
 
 def update_file(node, knob_name, file, no_popup=False):
@@ -157,6 +182,9 @@ def update_file(node, knob_name, file, no_popup=False):
     if scene_view:
         orig_sel = scene_view.getSelectedItems()
         orig_import = scene_view.getImportedItems()
+
+    # Clean input
+    file = file.encode("utf-8").strip()
 
     # Update node
     # Note: Use readKnobs to prevent popups. However, this avoids triggering
@@ -243,11 +271,41 @@ def swap_node(node_a, node_b, cleanup=True, skip_knobs=SKIP_KNOBS,
     if skip_frames:
         skip_knobs.extend(FRAME_KNOBS)
 
-    # Transfer knob values
-    for knob_name, knob in node_a.knobs().iteritems():
+    # If node_a's read file knob is on, just read file on node_b
+    # Skip transferring knobs that are disabled
+    skip_disabled = False
+    for knob in READ_FROM_FILE_KNOBS:
+        if node_a.knob(knob) and node_a.knob(knob).value():
+            if knob not in skip_knobs:
+                skip_disabled = True
+                # Set value on Node B
+                try:
+                    node_b.knob(knob).setValue(True)
+                except Exception:
+                    print(
+                        "Failed to transfer knob value '{0}' from {1} to {2}"
+                        "".format(
+                            knob, node_a.fullName(), node_b.fullName()
+                        )
+                    )
+
+    for knob_name, knob in node_a.knobs().items():
         # Missing knob
         if knob_name in skip_knobs or not node_b.knob(knob_name):
             continue
+        # Disabled knob w/ read_from_file=True
+        if skip_disabled:
+            if not knob.enabled():
+                print(
+                    "Skipping transfer of disabled knob: {0}".format(knob_name)
+                )
+                continue
+            elif knob_name in READ_FROM_FILE_KNOBS:
+                print(
+                    "Skipping transfer of read_from_file knob: {0}".format(
+                        knob_name)
+                )
+                continue
 
         # Clean knob value
         # Eg: If value if a default style string (Eg: 'default (linear)'),
@@ -262,8 +320,12 @@ def swap_node(node_a, node_b, cleanup=True, skip_knobs=SKIP_KNOBS,
         try:
             node_b.knob(knob_name).setValue(value)
         except Exception:
-            print "Failed to transfer knob value '{0}' from {1} to {2}" \
-                "".format(knob_name, node_a.fullName(), node_b.fullName())
+            print(
+                "Failed to transfer knob value '{0}' from {1} to {2}"
+                "".format(
+                    knob_name, node_a.fullName(), node_b.fullName()
+                )
+            )
 
     # Get Node A position
     a_xpos = node_a.xpos()
@@ -271,7 +333,12 @@ def swap_node(node_a, node_b, cleanup=True, skip_knobs=SKIP_KNOBS,
 
     # Delete Node A
     if cleanup:
+        # Get name
+        name = node_a.knob("name").value()
+        # Cleanup
         nuke.delete(node_a)
+        # Set to new name
+        node_b.setName(name)
 
     # Set Node B to Node A's position
     node_b.setXYpos(a_xpos, a_ypos)
@@ -459,13 +526,13 @@ def key_knob(knob, keys, start, end, debug=False):
     for frame in range(start, end):
         # Get next shake list
         try:
-            input = pixel_iter.next()
+            input = next(pixel_iter)
         except StopIteration:
             raise ValueError("Shake data is missing entries for frames in"
                              "{0}-{1}".format(start, end))
 
         if debug:
-            print "Setting key: {0} ({1}, {2})".format(input)
+            print("Setting key: {0} ({1}, {2})".format(input))
 
         # Multiple keys
         if isinstance(input, list):
@@ -548,43 +615,47 @@ def copy_node(node):
     to_copy.knob("selected").setValue(True)
 
     # Copy
-    nuke.nodeCopy(to_copy.fullName())
-    nukescripts.clear_selection_recursive()
+    nuke.nodeCopy("%clipboard%")
 
     # Paste
-    copied_node = nuke.nodePaste(to_copy.fullName())
+    nukescripts.clear_selection_recursive()
+    copied_node = nuke.nodePaste("%clipboard%")
     nukescripts.clear_selection_recursive()
 
     return copied_node
 
 
-def get_latest_version(knob, prefix="v"):
+def compare(node_a, node_b, settings=""):
     """
-    Get highest available version for node
+    Add compare to nodes
 
     Args:
-        knob (nuke.Knob): File knob
-        prefix (str): Version prefix
-                      Defaults to 'v'
+        node_a (nuke.Nuke): First node
+        node_b (nuke.Nuke): Second node
+        settings (str): TCL str of compare
     """
-    start = knob.value()
-    ver_prefix, ver = nukescripts.version_get(start, prefix)
-    while True:
-        try:
-            curr = knob.value()
-            ver_prefix, ver = nukescripts.version_get(curr, prefix)
-            # Next version
-            next_ver = nukescripts.version_set(
-                curr, prefix, int(ver), int(ver) + 1)
-            knob.setValue(next_ver)
-            # Revert
-            if not os.path.exists(knob.evaluate()):
-                knob.setValue(curr)
-                break
+    nukescripts.clear_selection_recursive()
 
-            nuke.root().setModified(True)
-        except ValueError:
-            break
+    compare = nuke.createNode("Compare", settings)
+    compare.setInput(0, node_a)
+    compare.setInput(1, node_b)
 
-    knob.setValue(start)
-    return int(ver)
+    ax = node_a.xpos()
+    ay = node_a.ypos()
+    bx = node_b.xpos()
+    by = node_b.ypos()
+
+    if ax > bx:
+        cx = bx + old_div(abs(ax - bx), 2)
+    elif ax == bx:
+        cx = bx + 50
+    else:
+        cx = ax + old_div(abs(ax - bx), 2)
+    if ay > by:
+        cy = ay + 50
+    else:
+        cy = by + 50
+
+    compare.setXYpos(cx, cy)
+
+    return compare

@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 # Standard
+from __future__ import division
+from builtins import range
+from past.utils import old_div
 import os
 import re
 
@@ -9,12 +12,15 @@ import nukescripts
 from Qt import QtWidgets
 
 # Pipeline
-from core_pipeline.utils import file_io
+from core_pipeline import logger
+from core_pipeline.utils import file_io, env_utils, path_utils
 from core_pipeline_ui import utils
-from . import node_utils
+from . import nodes
 
 
 # Globals
+LOG = logger.get_logger("nuke_utils.script_utils")
+
 WRITES = ["DeepWrite", "Write", "WriteGeo"]
 READS = ["Read"]
 
@@ -23,11 +29,43 @@ READS = ["Read"]
 PLUGINS = {"rsmb": "OFXcom.revisionfx"}
 
 
+def get_script_name(script_name=None):
+    """
+    Get script name
+
+    Args:
+        script_name (str): Nuke script filepath
+
+    Returns:
+        Cleaned script path str
+    """
+    try:
+        name = script_name or nuke.scriptName()
+    except RuntimeError:
+        name = ""
+    else:
+        # Windows
+        # Eg: W:/shots/...
+        name = path_utils.clean_path(re.sub(
+            "^W:",
+            path_utils.clean_path(
+                os.path.join(env_utils.get_project_dir(), "Wdrv")),
+            name)
+        )
+        # Eg: S:/ANIMA/projects/VPM/Wdrv/shots/...
+        # name = path_utils.clean_path(re.sub("Wdrv", "Work", name))
+        # Linux
+        name = path_utils.clean_path(os.path.realpath(name))
+        # Cleanup
+        # name = re.sub("shots", "Shots", name)
+
+    return name
+
+
 def get_all_nodes(classes=None, groups=True):
     """
     Get all nodes matching the provided filters
 
-    Args:
     Args:
         classes (str): List of Node class to filter by
         groups (bool): If True, get grouped nodes as well
@@ -54,7 +92,7 @@ def get_camera_shakes():
         List of Nuke Nodes
     """
     return [n for n in get_all_nodes("Transform")
-            if node_utils.node_ops.get_anima_file_knob(n)]
+            if nodes.node_ops.get_anima_file_knob(n)]
 
 
 def get_reads():
@@ -115,6 +153,24 @@ def get_output_write():
                 # "複数のWriteノードが見つかりました。 1を選択してください。"
             # 1 enabled Write in current selection
             return sel[0]
+
+
+def get_upstream_writes(node, enabled=False):
+    """
+    Get upstream writes from node
+
+    Args:
+        node (nuke.Node): Input node
+        enabled (bool): If True, exclude disabled nodes from listen
+
+    Returns:
+        List of Write nodes
+    """
+    writes = [n for n in get_dependencies(node) if n in get_writes()]
+    if enabled:
+        return [n for n in writes if not n.knob("disable").value()]
+
+    return writes
 
 
 def get_dependencies(node, dep_list=None, filter=None):
@@ -199,14 +255,11 @@ def select_dependencies(node, dep_list=None, filter=None, add=False):
             node.knob("selected").setValue(True)
 
 
-def get_script_filepaths(input_nodes=None, ignore=WRITES, class_filter=None):
+def get_script_filepaths(ignore=WRITES, class_filter=None):
     """
     Get all file nodes referenced by the current script
 
     Args:
-        input_nodes (list): Nodes to collect file paths for.
-                            If not provided, uses selected nodes.
-                            If none selected, uses all nodes.
         ignore (list): List of Node classes to ignore
                        (Defaults to Write node classes)
         class_filter (list): Only collect these Node classes
@@ -215,13 +268,12 @@ def get_script_filepaths(input_nodes=None, ignore=WRITES, class_filter=None):
 
     Returns:
         Dict of node file data (format below)
-        {nuke.Node: {File knob name: File path}}
+        {Node name: {File knob name: File path}}
     """
-    if not input_nodes:
-        input_nodes = nuke.selectedNodes() or get_all_nodes()
+    all_nodes = get_all_nodes()
 
     files = {}
-    for node in input_nodes:
+    for node in all_nodes:
         # Skip node if
         # 1. Class is in ignore list
         if ignore and node.Class() in ignore:
@@ -231,12 +283,11 @@ def get_script_filepaths(input_nodes=None, ignore=WRITES, class_filter=None):
             continue
 
         # Add Node file data
-        node_files = node_utils.node_ops.get_node_files(node)
-        if node_files:
-            if node in files:
-                files[node].update(node_files)
-            else:
-                files[node] = node_files
+        node_files = nodes.node_ops.get_node_files(node)
+        if node.fullName() in files:
+            files[node.fullName()].update(node_files)
+        else:
+            files[node.fullName()] = node_files
 
     return files
 
@@ -370,6 +421,36 @@ def capture_viewer(filepath, qt=False, size=None):
         viewer.capture(filepath)
 
 
+def remove_y_drive(node_classes=["Read"]):
+    """
+    Remove all Y: drive path references for this script
+
+    Args:
+        node_classes (list): List of Node classes to operate on
+
+    Returns: None
+    """
+    dirs = {"Y:/project": "S:/ANIMA/projects",
+            "/project": "/ANIMA/projects"}
+
+    for node_class in node_classes:
+        # For each file knob on the node, remove Y: drive reference
+        for node in get_all_nodes(node_class):
+            for knob_name, filename in \
+                    nodes.node_ops.get_node_files(node).items():
+                # Adjust start dir
+                new_file = filename
+                for src, dest in dirs.items():
+                    if re.search("^{0}".format(src), new_file, re.IGNORECASE):
+                        new_file = re.sub("^{0}".format(src), dest, new_file)
+
+                # File path was changed
+                if new_file != filename:
+                    nuke.tprint("Updating {0} path to {1}".format(
+                        node.fullName(), new_file))
+                    nodes.node_ops.update_file(node, knob_name, new_file)
+
+
 def select_and_zoom(nodes, add=False):
     """
     Select and center zoom on the given nodes
@@ -379,9 +460,6 @@ def select_and_zoom(nodes, add=False):
         add (bool): If True, add to current selection
                     If False, clear selection first
     """
-    if not isinstance(nodes, list):
-        nodes = [nodes]
-
     # TODO work with multiple nodes
     if len(nodes) > 1:
         raise ValueError("Unsupported. Only 1 node allowed in list")
@@ -398,8 +476,8 @@ def select_and_zoom(nodes, add=False):
         node.knob("selected").setValue(True)
 
         # Center node
-        x_zoom = node.xpos() + node.screenWidth() / 2
-        y_zoom = node.ypos() + node.screenHeight() / 2
+        x_zoom = node.xpos() + old_div(node.screenWidth(), 2)
+        y_zoom = node.ypos() + old_div(node.screenHeight(), 2)
         nuke.zoom(2, [x_zoom, y_zoom])
 
 
@@ -473,3 +551,44 @@ def upper_left_pos(nodes=None):
         ypos = 0
 
     return xpos, ypos
+
+
+def scooch_deps(start_node, xpos=0, ypos=0, nodes=None):
+    """
+    Scooch downstream dependencies by x or y
+
+    Args:
+        start_node (nuke.Node): Starting node
+        xpos (int): X position increment
+        ypos (int): Y position increment
+        nodes (list): List of Nuke nodes to search for dependencies to start_node.
+                      Defaults to all nodes in script.
+    """
+    if not xpos and not ypos:
+        raise ValueError("Must provided non-zero xpos or ypos!")
+
+    if not nodes:
+        nodes = get_all_nodes()
+
+    LOG.info("Scooching {0}...".format(start_node.fullName()))
+
+    for node in nodes:
+        for i in range(node.inputs()):
+            if node.input(i) == start_node:
+                # Determine x,y
+                if start_node.xpos() > node.xpos():
+                    x = start_node.xpos()
+                else:
+                    x = node.xpos()
+                if start_node.ypos() > node.ypos():
+                    y = start_node.ypos()
+                else:
+                    y = node.ypos()
+
+                # Update pos
+                LOG.info("Moving {0} {1} --> {2} {3}".format(
+                    node.xpos(), node.ypos(), x + xpos, y + ypos))
+                node.setXYpos(x + xpos, y + ypos)
+
+                # Move next dependency
+                scooch_deps(node, xpos, ypos, nodes)
